@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Heurocosm.Rnd;
@@ -8,6 +9,11 @@ using NullGuard;
 
 namespace Heurocosm
 {
+    public class Progress
+    {
+        public int Generation { get; set; }
+    }
+
     public class Engine<T>
     {
         private struct Neighbour
@@ -26,6 +32,8 @@ namespace Heurocosm
         private double crossoverProbability;
         private int populationSize;
 
+        private readonly Subject<Progress> progress;
+
         public Engine(ISpawner<T> spawner, IFitnessCalculator<T> fitnessCalculator, ICrossoverOperator<T> crossover, IMutatorOperator<T> mutator)
         {
             Spawner = spawner;
@@ -36,6 +44,8 @@ namespace Heurocosm
             PopulationSize = 300;
             CrossoverProbability = 0.87;
             MutationProbability = 0.01;
+
+            progress = new Subject<Progress>();
         }
 
         public int PopulationSize
@@ -78,6 +88,8 @@ namespace Heurocosm
         [AllowNull]
         public ITerminator<T> Terminator { get; set; }
 
+        public IObservable<Progress> Progress { get { return progress; } }
+
         public Task<T> Run(CancellationToken token, TaskScheduler scheduler = null)
         {
             if (scheduler == null)
@@ -92,17 +104,23 @@ namespace Heurocosm
 
                 var rnd = new ThreadSafeRandom();
 
+                int generation = 0;
+
                 var population = CreatePopulation(popts, rnd);
                 var currentBest = GetBestNeighbour(population);
+
+                progress.OnNext(new Progress() { Generation = generation++ });
 
                 while (!Terminator.IsFinished(currentBest.Item, currentBest.Fitness))
                 {
                     population = CreateNextGeneration(population, popts, rnd);
                     currentBest = GetBestNeighbour(population);
+
+                    progress.OnNext(new Progress() { Generation = generation++ });
                 }
 
                 return currentBest.Item;
-            }, token);
+            }, token, TaskCreationOptions.None, scheduler);
         }
 
         private Neighbour GetBestNeighbour(IEnumerable<Neighbour> population)

@@ -69,13 +69,9 @@ namespace Heurocosm.Tests
             var sb = new StringBuilder(item);
 
             for (int i = 0; i < item.Length; i++)
-            {
                 if (item[i] != target[i])
-                {
                     sb[i] = validChars[rnd.Next(0, validChars.Length)];
-                    break;
-                }
-            }
+
             return sb.ToString();
         }
 
@@ -84,9 +80,13 @@ namespace Heurocosm.Tests
         {
             var engine = new Engine<string>(this, this, this, this);
 
-            var result = await engine.Run(CancellationToken.None);
+            int generation = 0;
+            engine.Progress.Subscribe(p => generation = p.Generation);
+
+            var result = await engine.Run(CancellationToken.None, new TestScheduler());
 
             Assert.Equal(target, result);
+            Assert.Equal(448, generation);
         }
     }
 }
