@@ -47,7 +47,8 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Class1.cs" />
+    <Compile Include="ShakespeareanMonkeysTests.cs" />
+    <Compile Include="ThreadSafeRandomTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
